@@ -1,7 +1,7 @@
 # 训练**个epoch，无预训练
-# python train.py --epochs **
+# python train.py --epochs ** --pretrain_epochs 0
 # 带**轮旋转预测预训练
-#python train.py --epochs 50 --pretrain_epochs ** --pretext_task rotation
+#python train.py --epochs 150 --pretrain_epochs 20 --pretext_task rotation
 # 带**轮拼图预训练
 #python train.py --epochs 50 --pretrain_epochs ** --pretext_task jigsaw
 # 带**轮重建预训练
@@ -27,7 +27,7 @@ from model import UNet_CBAM as Model
 from model import SelfSupervisedUNet  
 
 # 设置随机种子
-def set_seed(seed=42):
+def set_seed(seed=12):
     """设置随机种子以确保实验可复现"""
     random.seed(seed)
     np.random.seed(seed)
@@ -385,6 +385,7 @@ def main():
                    f"{val_metrics['acc']:.4f}\t{val_metrics['sp']:.4f}\t"
                    f"{val_metrics['dsc']:.4f}\t{val_metrics['miou']:.4f}\n")
         
+        # ✅ 只保存最佳模型，不再每10轮保存检查点
         if val_metrics['dsc'] > best_dsc:
             best_dsc = val_metrics['dsc']
             best_epoch = epoch
@@ -397,15 +398,6 @@ def main():
                 'val_miou': val_metrics['miou'],
             }, best_model_path)
             print(f"✓ 保存最佳模型到: {best_model_path}")
-        
-        if epoch % 10 == 0:
-            checkpoint_path = os.path.join(args.save_dir, f"checkpoint_epoch_{epoch}.pth")
-            torch.save({
-                'epoch': epoch,
-                'model_state_dict': model.state_dict(),
-                'optimizer_state_dict': optimizer.state_dict(),
-            }, checkpoint_path)
-            print(f"✓ 保存检查点到: {checkpoint_path}")
     
     total_time = time.time() - start_time
     print(f"\n{'='*60}")
